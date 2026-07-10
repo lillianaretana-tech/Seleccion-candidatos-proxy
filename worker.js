@@ -20,20 +20,19 @@ export default {
     try {
       const body = await request.text();
 
-      const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
+          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
         },
         body,
       });
 
-      const data = await anthropicRes.text();
+      const data = await openaiRes.text();
 
       return new Response(data, {
-        status: anthropicRes.status,
+        status: openaiRes.status,
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
