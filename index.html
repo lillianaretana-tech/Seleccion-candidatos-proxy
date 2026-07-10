@@ -524,9 +524,9 @@ Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional antes o des
 
 // Después de desplegar tu Worker en Cloudflare, pegá acá la URL que te da
 // (algo como https://seleccion-candidatos-proxy.tu-usuario.workers.dev)
-const WORKER_URL = "https://PEGA-AQUI-TU-WORKER.workers.dev";
+const WORKER_URL = "https://seleccion-candidatos-proxy.lilliana-retana.workers.dev";
 
-async function callClaude(systemPrompt, batch){
+async function callAI(systemPrompt, batch){
   if(WORKER_URL.includes('PEGA-AQUI')){
     throw new Error('Falta configurar WORKER_URL en el código con la URL de tu Cloudflare Worker.');
   }
@@ -535,14 +535,15 @@ async function callClaude(systemPrompt, batch){
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userContent }]
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent }
+      ]
     })
   });
   const data = await response.json();
-  const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const textBlocks = data.choices?.[0]?.message?.content || '';
   const clean = textBlocks.replace(/```json/g, '').replace(/```/g, '').trim();
   try{
     return JSON.parse(clean);
@@ -586,7 +587,7 @@ async function runAnalysis(){
 
   for(const batch of batches){
     try{
-      const result = await callClaude(systemPrompt, batch);
+      const result = await callAI(systemPrompt, batch);
       if(result && Array.isArray(result)){
         result.forEach(r => {
           const c = ready.find(x => x.id === r.id);
