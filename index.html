@@ -302,7 +302,7 @@
         <legend>Cargar hojas de vida</legend>
         <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
           <div class="big">Arrastrá los CVs acá o hacé clic para elegir</div>
-          <div class="small">Acepta PDF (con texto seleccionable) y Word (.docx). Podés subir varios a la vez.</div>
+          <div class="small">Acepta PDF (con texto seleccionable o escaneado) y Word (.docx). Si un PDF no tiene texto extraíble, se lee automáticamente con OCR — puede tardar unos segundos extra por archivo.</div>
           <input type="file" id="fileInput" multiple accept=".pdf,.docx">
         </div>
         <div class="cv-list" id="cvList"></div>
@@ -366,6 +366,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -407,7 +408,10 @@ function renderCVList(){
     const row = document.createElement('div');
     row.className = 'cv-row';
     const statusClass = c.status === 'ok' ? 'ok' : (c.status === 'warn' ? 'warn' : 'pending');
-    const statusText = c.status === 'ok' ? 'texto extraído' : (c.status === 'warn' ? 'revisar / vacío' : 'procesando...');
+    const statusText = c.status === 'ok' ? (c.method === 'ocr' ? 'leído con OCR' : 'texto extraído')
+      : c.status === 'warn' ? 'revisar / vacío'
+      : c.status === 'ocr' ? 'leyendo con OCR...'
+      : 'procesando...';
     row.innerHTML = `
       <input type="text" value="${c.nombre.replace(/"/g,'&quot;')}" onchange="renameCV('${c.id}', this.value)">
       <span class="status ${statusClass}">${statusText}</span>
@@ -455,18 +459,53 @@ async function extractDocx(file){
   return (result.value || '').trim();
 }
 
+async function ocrPDF(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let ocrText = '';
+  const maxPages = Math.min(pdf.numPages, 3); // limitamos páginas para no eternizar el proceso
+  for(let i = 1; i <= maxPages; i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const result = await Tesseract.recognize(canvas, 'spa');
+    ocrText += (result.data.text || '') + '\n';
+  }
+  return ocrText.trim();
+}
+
 async function handleFiles(fileList){
   for(const file of Array.from(fileList)){
     const nombre = file.name.replace(/\.(pdf|docx)$/i, '');
-    const entry = { id: 'c' + (idCounter++), nombre, texto: '', status: 'pending', source: file.name };
+    const entry = { id: 'c' + (idCounter++), nombre, texto: '', status: 'pending', method: '', source: file.name };
     candidates.push(entry);
     renderCVList();
     try{
-      let text = '';
-      if(/\.pdf$/i.test(file.name)) text = await extractPDF(file);
-      else if(/\.docx$/i.test(file.name)) text = await extractDocx(file);
-      entry.texto = text;
-      entry.status = text.length > 40 ? 'ok' : 'warn';
+      if(/\.docx$/i.test(file.name)){
+        const text = await extractDocx(file);
+        entry.texto = text;
+        entry.status = text.length > 40 ? 'ok' : 'warn';
+        entry.method = 'texto';
+      } else if(/\.pdf$/i.test(file.name)){
+        const text = await extractPDF(file);
+        if(text && text.replace(/\s/g, '').length > 80){
+          entry.texto = text;
+          entry.status = 'ok';
+          entry.method = 'texto';
+        } else {
+          // Texto no extraíble (fuente rara, baja resolución) -> respaldo con OCR
+          entry.status = 'ocr';
+          renderCVList();
+          const ocrText = await ocrPDF(file);
+          entry.texto = ocrText;
+          entry.status = ocrText.replace(/\s/g, '').length > 40 ? 'ok' : 'warn';
+          entry.method = 'ocr';
+        }
+      }
     }catch(e){
       entry.status = 'warn';
       entry.texto = '';
