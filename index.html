@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es-CR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expediente | Selección de candidatos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F1ECE1;
+    --paper-2: #E8E0CE;
+    --ink: #2B2620;
+    --ink-soft: #5C5346;
+    --folder: #C89B6B;
+    --folder-dark: #A87A4C;
+    --sage: #6B8556;
+    --sage-ink: #3E4F30;
+    --rust: #B5533C;
+    --rust-ink: #7A3527;
+    --line: #D8CFBD;
+    --white: #FBF9F4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    padding: 28px 20px 80px;
+  }
+  h1,h2,h3{ font-family:'Fraunces', serif; font-weight:700; margin:0; letter-spacing:-0.01em;}
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .wrap{ max-width: 920px; margin: 0 auto; }
+
+  /* ---- Header ---- */
+  .masthead{
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap;
+    gap:10px; margin-bottom: 22px; border-bottom: 2px solid var(--ink); padding-bottom:14px;
+  }
+  .masthead .tag{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    color: var(--ink-soft); background:var(--white); border:1px solid var(--line); padding:4px 9px; border-radius:3px;
+  }
+  .masthead h1{ font-size: 30px; }
+  .masthead .sub{ font-size:13px; color:var(--ink-soft); margin-top:2px; }
+
+  /* ---- Folder tabs ---- */
+  .tabs{ display:flex; gap:6px; margin-bottom:0; }
+  .tab{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.03em;
+    padding:10px 18px 12px; background: var(--paper-2); border:1px solid var(--line); border-bottom:none;
+    border-radius: 8px 8px 0 0; cursor:pointer; color:var(--ink-soft); user-select:none;
+    transform: translateY(3px); transition: transform .15s ease, background .15s ease;
+  }
+  .tab .n{ color: var(--folder-dark); font-weight:600; margin-right:6px;}
+  .tab.active{ background: var(--white); color: var(--ink); font-weight:600; transform: translateY(0); box-shadow: 0 -1px 0 var(--white); }
+  .tab:not(.active):hover{ background: #EFE7D6; }
+  .tab.disabled{ opacity:.45; cursor:not-allowed; }
+
+  .panelbox{
+    background: var(--white); border:1px solid var(--line); border-radius: 0 10px 10px 10px;
+    padding: 30px 30px 34px; box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 8px 24px -18px rgba(0,0,0,0.25);
+  }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  fieldset{ border:none; padding:0; margin:0 0 24px; }
+  legend{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.12em;
+    color: var(--folder-dark); margin-bottom:12px; padding:0; display:flex; align-items:center; gap:8px;
+  }
+  legend::after{ content:""; flex:1; height:1px; background: var(--line); }
+
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px 20px; }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+  label{ display:block; font-size:13px; font-weight:600; margin-bottom:6px; color: var(--ink); }
+  .hint{ font-size:12px; color:var(--ink-soft); font-weight:400; margin-top:4px; }
+  input[type=text], input[type=number], select, textarea{
+    width:100%; font-family:'IBM Plex Sans', sans-serif; font-size:14px; padding:10px 12px;
+    border:1px solid var(--line); border-radius:7px; background: var(--paper); color:var(--ink);
+    outline:none; transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus{ border-color: var(--folder-dark); background:var(--white); }
+  textarea{ resize:vertical; min-height:90px; line-height:1.5; }
+  .field-full{ grid-column: 1 / -1; }
+
+  .toggle-row{ display:flex; gap:10px; }
+  .toggle-row button{ flex:1; }
+  .pill-btn{
+    font-family:'IBM Plex Sans', sans-serif; font-size:13.5px; font-weight:600; padding:9px 10px;
+    border:1px solid var(--line); background: var(--paper); color: var(--ink-soft); border-radius:7px; cursor:pointer;
+  }
+  .pill-btn.selected{ background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+  .btn{
+    font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:14.5px; padding:12px 22px;
+    border-radius:8px; border:1px solid var(--ink); background: var(--ink); color: var(--white); cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px; transition: transform .1s ease, opacity .15s;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; transform:none; }
+  .btn.secondary{ background: transparent; color: var(--ink); }
+  .btn.ghost{ background:transparent; border-color:var(--line); color:var(--ink-soft); }
+  .actions{ display:flex; justify-content:space-between; align-items:center; margin-top: 26px; gap:12px; flex-wrap:wrap;}
+
+  /* ---- Upload zone ---- */
+  .dropzone{
+    border: 2px dashed var(--folder); border-radius:10px; background: var(--paper);
+    padding: 30px 20px; text-align:center; cursor:pointer; transition: background .15s, border-color .15s;
+  }
+  .dropzone:hover, .dropzone.drag{ background:#EFE4CE; border-color: var(--folder-dark); }
+  .dropzone .big{ font-family:'Fraunces', serif; font-size:19px; margin-bottom:6px;}
+  .dropzone .small{ font-size:12.5px; color:var(--ink-soft); }
+  input[type=file]{ display:none; }
+
+  .cv-list{ margin-top:18px; display:flex; flex-direction:column; gap:8px; }
+  .cv-row{
+    display:flex; align-items:center; gap:10px; background: var(--paper); border:1px solid var(--line);
+    border-radius:8px; padding:9px 12px;
+  }
+  .cv-row input[type=text]{ flex:1; padding:7px 10px; font-size:13.5px; }
+  .cv-row .status{ font-family:'IBM Plex Mono', monospace; font-size:11px; padding:3px 8px; border-radius:20px; white-space:nowrap;}
+  .status.ok{ background:#E4EBDF; color: var(--sage-ink); }
+  .status.warn{ background:#F3E0D4; color: var(--rust-ink); }
+  .status.pending{ background:#EEE9DB; color: var(--ink-soft); }
+  .cv-row .rm{ cursor:pointer; color: var(--rust); font-weight:700; font-size:15px; padding:0 4px; background:none; border:none;}
+
+  .manual-add{ margin-top:14px; }
+  .manual-add summary{ cursor:pointer; font-size:13px; color: var(--folder-dark); font-weight:600; }
+
+  /* ---- Progress ---- */
+  .progress-wrap{ margin-top:22px; }
+  .progress-track{ height:8px; background: var(--paper-2); border-radius:6px; overflow:hidden; border:1px solid var(--line);}
+  .progress-fill{ height:100%; background: linear-gradient(90deg, var(--folder), var(--sage)); width:0%; transition: width .3s ease; }
+  .progress-label{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); margin-top:8px; }
+
+  /* ---- Results ---- */
+  .results-summary{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .results-summary h2{ font-size:22px; }
+  .results-summary .sub{ font-size:13px; color:var(--ink-soft); }
+  .card{
+    position:relative; border:1px solid var(--line); background: var(--paper); border-radius:10px;
+    padding:18px 20px; margin-bottom:12px; display:grid; grid-template-columns: 64px 1fr auto; gap:16px; align-items:start;
+  }
+  .card.selected{ border-color: var(--sage); background: #F4F7F1; }
+  .score-stamp{
+    width:60px; height:60px; border-radius:50%; border:2.5px solid var(--folder-dark);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace;
+    font-weight:700; font-size:19px; color: var(--folder-dark); transform: rotate(-6deg);
+  }
+  .card.selected .score-stamp{ border-color: var(--sage); color: var(--sage-ink); }
+  .stamp-tag{
+    position:absolute; top:-10px; right:16px; background: var(--sage); color:var(--white);
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase;
+    padding:4px 10px; border-radius:3px; transform: rotate(3deg); box-shadow:0 2px 4px rgba(0,0,0,0.15);
+  }
+  .card h3{ font-size:17px; margin-bottom:3px; }
+  .card .resumen{ font-size:13.5px; color:var(--ink-soft); margin-bottom:8px; line-height:1.45; }
+  .tags{ display:flex; flex-wrap:wrap; gap:6px; }
+  .tag-fort{ font-size:11.5px; background:#E4EBDF; color:var(--sage-ink); padding:3px 8px; border-radius:20px; }
+  .tag-alert{ font-size:11.5px; background:#F3E0D4; color:var(--rust-ink); padding:3px 8px; border-radius:20px; }
+  .card .rank{ font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); text-align:right; }
+  .no-min{ opacity:.72; }
+
+  .empty{ text-align:center; padding:40px 20px; color:var(--ink-soft); }
+  .empty .big{ font-family:'Fraunces', serif; font-size:19px; color:var(--ink); margin-bottom:6px;}
+
+  .toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+
+  .spinner{
+    width:14px; height:14px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff;
+    border-radius:50%; animation: spin .7s linear infinite; display:inline-block;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .error-box{ background:#F3E0D4; border:1px solid var(--rust); color: var(--rust-ink); padding:12px 14px; border-radius:8px; font-size:13px; margin-top:14px; }
+
+  /* ---- History / compare ---- */
+  .history-row{
+    display:flex; align-items:center; gap:12px; background: var(--paper); border:1px solid var(--line);
+    border-radius:8px; padding:11px 14px; margin-bottom:8px;
+  }
+  .history-row input[type=checkbox]{ width:16px; height:16px; accent-color: var(--folder-dark); flex:none; }
+  .hinfo{ flex:1; }
+  .hpuesto{ font-weight:600; font-size:14.5px; }
+  .hmeta{ font-size:11.5px; color: var(--ink-soft); margin-top:2px; }
+  .compare-table{ width:100%; border-collapse:collapse; font-size:13.5px; margin-top:4px; }
+  .compare-table th{ text-align:left; font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); border-bottom:2px solid var(--ink); padding:8px 10px; }
+  .compare-table td{ padding:8px 10px; border-bottom:1px solid var(--line); }
+  .compare-table td.up{ color: var(--sage-ink); font-weight:600; }
+  .compare-table td.down{ color: var(--rust-ink); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <h1>Expediente</h1>
+      <div class="sub">Selección de candidatos con criterios propios · SBM Corp</div>
+    </div>
+    <div class="tag" id="cvCounter">0 CVs cargados</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-step="1"><span class="n">01</span>Puesto</div>
+    <div class="tab" data-step="2"><span class="n">02</span>Cargar CVs</div>
+    <div class="tab" data-step="3"><span class="n">03</span>Resultados</div>
+    <div class="tab" data-step="4"><span class="n">04</span>Historial</div>
+  </div>
+
+  <div class="panelbox">
+
+    <!-- STEP 1: CONFIG -->
+    <section class="panel active" id="panel-1">
+      <fieldset>
+        <legend>Puesto a buscar</legend>
+        <div class="grid">
+          <div class="field-full">
+            <label for="puesto">Nombre del puesto</label>
+            <input type="text" id="puesto" list="puestosList" placeholder="Ej: Operario de limpieza, Recepcionista, Coordinador de facilities...">
+            <datalist id="puestosList">
+              <option value="Operario(a) de limpieza">
+              <option value="Recepcionista">
+              <option value="Asistente administrativo(a)">
+              <option value="Coordinador(a) de facilities">
+              <option value="Supervisor(a) de operaciones">
+            </datalist>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Campos base</legend>
+        <div class="grid">
+          <div>
+            <label for="experiencia">Experiencia mínima (años)</label>
+            <input type="number" id="experiencia" min="0" step="0.5" placeholder="Ej: 2">
+          </div>
+          <div>
+            <label for="educacion">Educación mínima</label>
+            <select id="educacion">
+              <option value="Sin requisito específico">Sin requisito específico</option>
+              <option value="Primaria completa">Primaria completa</option>
+              <option value="Secundaria incompleta">Secundaria incompleta</option>
+              <option value="Secundaria completa">Secundaria completa</option>
+              <option value="Técnico">Técnico</option>
+              <option value="Universitario">Universitario</option>
+            </select>
+          </div>
+          <div>
+            <label for="ubicacion">Ubicación / zona</label>
+            <input type="text" id="ubicacion" placeholder="Ej: San José centro, GAM, cualquier zona">
+          </div>
+          <div>
+            <label for="disponibilidad">Disponibilidad requerida</label>
+            <select id="disponibilidad">
+              <option value="Cualquiera">Cualquiera</option>
+              <option value="Tiempo completo">Tiempo completo</option>
+              <option value="Medio tiempo">Medio tiempo</option>
+              <option value="Fines de semana / turnos rotativos">Fines de semana / turnos rotativos</option>
+            </select>
+          </div>
+          <div>
+            <label>¿Requiere licencia de conducir?</label>
+            <div class="toggle-row">
+              <button type="button" class="pill-btn selected" id="licNo" onclick="setLicencia(false)">No</button>
+              <button type="button" class="pill-btn" id="licSi" onclick="setLicencia(true)">Sí</button>
+            </div>
+          </div>
+          <div>
+            <label for="cuantos">¿Cuántos candidatos querés seleccionar?</label>
+            <input type="number" id="cuantos" min="1" value="10">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Otros criterios (texto libre)</legend>
+        <div class="grid">
+          <div class="field-full">
+            <label for="criterios">Cualquier otro requisito importante para este puesto</label>
+            <textarea id="criterios" placeholder="Ej: que tenga experiencia previa en limpieza de oficinas corporativas, disponibilidad para trabajar en Escazú, que no tenga quejas por impuntualidad, preferible que hable algo de inglés, etc."></textarea>
+            <div class="hint">Esto se le pasa tal cual a la evaluación — entre más específica seas, mejor el filtro.</div>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <div></div>
+        <button class="btn" onclick="goStep(2)">Siguiente: cargar CVs →</button>
+      </div>
+    </section>
+
+    <!-- STEP 2: UPLOAD -->
+    <section class="panel" id="panel-2">
+      <fieldset>
+        <legend>Cargar hojas de vida</legend>
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <div class="big">Arrastrá los CVs acá o hacé clic para elegir</div>
+          <div class="small">Acepta PDF (con texto seleccionable) y Word (.docx). Podés subir varios a la vez.</div>
+          <input type="file" id="fileInput" multiple accept=".pdf,.docx">
+        </div>
+        <div class="cv-list" id="cvList"></div>
+
+        <details class="manual-add">
+          <summary>+ Agregar un CV manualmente (pegar texto — útil si es un escaneo o imagen)</summary>
+          <div class="grid" style="margin-top:12px;">
+            <div>
+              <label for="manualNombre">Nombre del candidato</label>
+              <input type="text" id="manualNombre" placeholder="Nombre completo">
+            </div>
+            <div class="field-full">
+              <label for="manualTexto">Contenido del CV (pegar texto)</label>
+              <textarea id="manualTexto" style="min-height:120px;"></textarea>
+            </div>
+            <div class="field-full">
+              <button type="button" class="btn secondary" style="border:1px solid var(--line);" onclick="addManualCV()">Agregar candidato</button>
+            </div>
+          </div>
+        </details>
+      </fieldset>
+
+      <div class="actions">
+        <button class="btn ghost" onclick="goStep(1)">← Volver</button>
+        <button class="btn" id="analyzeBtn" onclick="runAnalysis()">Analizar candidatos →</button>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap" style="display:none;">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel">Analizando...</div>
+      </div>
+      <div class="error-box" id="errorBox" style="display:none;"></div>
+    </section>
+
+    <!-- STEP 3: RESULTS -->
+    <section class="panel" id="panel-3">
+      <div class="results-summary">
+        <div>
+          <h2>Resultados</h2>
+          <div class="sub" id="resultsSub">Ordenados por afinidad con el puesto</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn ghost" onclick="goStep(1)">Ajustar criterios</button>
+          <button class="btn secondary" style="border:1px solid var(--line);" onclick="saveSearch()">Guardar esta búsqueda</button>
+          <button class="btn secondary" style="border:1px solid var(--line);" onclick="exportCSV()">Exportar CSV</button>
+        </div>
+      </div>
+      <div id="resultsList"></div>
+    </section>
+
+    <!-- STEP 4: HISTORY -->
+    <section class="panel" id="panel-4">
+      <fieldset>
+        <legend>Búsquedas guardadas</legend>
+        <div class="hint" style="margin-bottom:14px;">Se guardan en tu Supabase, disponibles desde cualquier dispositivo donde abrás esta herramienta. Marcá dos búsquedas del mismo puesto para compararlas.</div>
+        <div id="historyList"></div>
+      </fieldset>
+      <div id="comparePanel" style="display:none; margin-top:6px;"></div>
+    </section>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const SUPABASE_URL = "https://vgkyoyosjewdygxtnqvu.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZna3lveW9zamV3ZHlneHRucXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NTAxNDAsImV4cCI6MjA5ODIyNjE0MH0.oDxSWg61UFLqMh2MeEW6yxarZAjobhEA6TWm0KS_7CA";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let candidates = []; // {id, nombre, texto, status, source}
+let requiereLicencia = false;
+let idCounter = 1;
+
+function setLicencia(v){
+  requiereLicencia = v;
+  document.getElementById('licSi').classList.toggle('selected', v);
+  document.getElementById('licNo').classList.toggle('selected', !v);
+}
+
+function goStep(n){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  document.querySelector('.tab[data-step="' + n + '"]').classList.add('active');
+}
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => goStep(t.dataset.step));
+});
+
+function updateCounter(){
+  document.getElementById('cvCounter').textContent = candidates.length + (candidates.length === 1 ? ' CV cargado' : ' CVs cargados');
+}
+
+function renderCVList(){
+  const list = document.getElementById('cvList');
+  list.innerHTML = '';
+  candidates.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'cv-row';
+    const statusClass = c.status === 'ok' ? 'ok' : (c.status === 'warn' ? 'warn' : 'pending');
+    const statusText = c.status === 'ok' ? 'texto extraído' : (c.status === 'warn' ? 'revisar / vacío' : 'procesando...');
+    row.innerHTML = `
+      <input type="text" value="${c.nombre.replace(/"/g,'&quot;')}" onchange="renameCV('${c.id}', this.value)">
+      <span class="status ${statusClass}">${statusText}</span>
+      <button class="rm" onclick="removeCV('${c.id}')" title="Quitar">×</button>
+    `;
+    list.appendChild(row);
+  });
+  updateCounter();
+}
+
+function renameCV(id, val){
+  const c = candidates.find(x => x.id === id);
+  if(c) c.nombre = val;
+}
+function removeCV(id){
+  candidates = candidates.filter(x => x.id !== id);
+  renderCVList();
+}
+
+function addManualCV(){
+  const nombre = document.getElementById('manualNombre').value.trim();
+  const texto = document.getElementById('manualTexto').value.trim();
+  if(!nombre || !texto){ alert('Completá el nombre y el texto del CV.'); return; }
+  candidates.push({ id: 'c' + (idCounter++), nombre, texto, status: 'ok', source: 'manual' });
+  document.getElementById('manualNombre').value = '';
+  document.getElementById('manualTexto').value = '';
+  renderCVList();
+}
+
+async function extractPDF(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for(let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+async function extractDocx(file){
+  const buf = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer: buf });
+  return (result.value || '').trim();
+}
+
+async function handleFiles(fileList){
+  for(const file of Array.from(fileList)){
+    const nombre = file.name.replace(/\.(pdf|docx)$/i, '');
+    const entry = { id: 'c' + (idCounter++), nombre, texto: '', status: 'pending', source: file.name };
+    candidates.push(entry);
+    renderCVList();
+    try{
+      let text = '';
+      if(/\.pdf$/i.test(file.name)) text = await extractPDF(file);
+      else if(/\.docx$/i.test(file.name)) text = await extractDocx(file);
+      entry.texto = text;
+      entry.status = text.length > 40 ? 'ok' : 'warn';
+    }catch(e){
+      entry.status = 'warn';
+      entry.texto = '';
+    }
+    renderCVList();
+  }
+}
+
+const fileInput = document.getElementById('fileInput');
+fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+const dropzone = document.getElementById('dropzone');
+['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e => { if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+
+function buildSystemPrompt(){
+  const puesto = document.getElementById('puesto').value.trim() || 'Puesto sin especificar';
+  const experiencia = document.getElementById('experiencia').value || 'sin mínimo definido';
+  const educacion = document.getElementById('educacion').value;
+  const ubicacion = document.getElementById('ubicacion').value.trim() || 'sin restricción de zona';
+  const disponibilidad = document.getElementById('disponibilidad').value;
+  const licencia = requiereLicencia ? 'Sí, es requisito indispensable' : 'No es requisito';
+  const criterios = document.getElementById('criterios').value.trim();
+
+  return `Sos una reclutadora de Recursos Humanos senior en Costa Rica, especializada en selección de personal operativo y administrativo para empresas de servicios (limpieza, facilities, atención al cliente). Tu trabajo es evaluar hojas de vida de forma objetiva contra los requisitos de un puesto específico.
+
+PUESTO: ${puesto}
+
+REQUISITOS BASE:
+- Experiencia mínima: ${experiencia} años
+- Educación mínima: ${educacion}
+- Ubicación / zona preferida: ${ubicacion}
+- Disponibilidad requerida: ${disponibilidad}
+- Licencia de conducir: ${licencia}
+
+OTROS CRITERIOS DEFINIDOS POR LA RECLUTADORA:
+${criterios || 'Ninguno adicional, evaluá solo con los campos base.'}
+
+Para cada CV que te paso, evaluá qué tan bien cumple estos requisitos y asigná un puntaje de 0 a 100 (100 = candidato ideal para este puesto específico, no un puntaje genérico de "buen CV"). Basate únicamente en lo que dice el texto del CV — no asumas ni inventes información que no esté explícita. Si el CV no menciona algo relevante, tratalo como un vacío de información, no como algo positivo ni negativo automático.
+
+Respondé ÚNICAMENTE con un array JSON válido, sin texto adicional antes o después, sin marcadores de markdown (nada de \`\`\`), con esta estructura exacta:
+[
+  {
+    "id": "id del candidato tal como te lo paso",
+    "puntaje": 0,
+    "cumpleMinimos": true,
+    "resumen": "una frase de máximo 20 palabras resumiendo el perfil respecto al puesto",
+    "fortalezas": ["punto fuerte corto", "otro punto fuerte corto"],
+    "alertas": ["vacío o punto de atención corto"]
+  }
+]
+"fortalezas" y "alertas" pueden tener 0, 1 o 2 elementos cada uno. No agregues campos extra.`;
+}
+
+// Después de desplegar tu Worker en Cloudflare, pegá acá la URL que te da
+// (algo como https://seleccion-candidatos-proxy.tu-usuario.workers.dev)
+const WORKER_URL = "https://PEGA-AQUI-TU-WORKER.workers.dev";
+
+async function callClaude(systemPrompt, batch){
+  if(WORKER_URL.includes('PEGA-AQUI')){
+    throw new Error('Falta configurar WORKER_URL en el código con la URL de tu Cloudflare Worker.');
+  }
+  const userContent = batch.map(c => `--- CV id: ${c.id} | Nombre: ${c.nombre} ---\n${c.texto.slice(0, 6000)}`).join('\n\n');
+  const response = await fetch(WORKER_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userContent }]
+    })
+  });
+  const data = await response.json();
+  const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  const clean = textBlocks.replace(/```json/g, '').replace(/```/g, '').trim();
+  try{
+    return JSON.parse(clean);
+  }catch(e){
+    const match = clean.match(/\[[\s\S]*\]/);
+    if(match){ try{ return JSON.parse(match[0]); }catch(e2){ return null; } }
+    return null;
+  }
+}
+
+function chunk(arr, size){
+  const out = [];
+  for(let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+async function runAnalysis(){
+  const errorBox = document.getElementById('errorBox');
+  errorBox.style.display = 'none';
+
+  const ready = candidates.filter(c => c.texto && c.texto.trim().length > 20);
+  if(ready.length === 0){
+    errorBox.textContent = 'No hay CVs con texto para analizar. Subí al menos un archivo o agregá uno manualmente.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Analizando...';
+
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const progressLabel = document.getElementById('progressLabel');
+  progressWrap.style.display = 'block';
+
+  const systemPrompt = buildSystemPrompt();
+  const batches = chunk(ready, 4);
+  let done = 0;
+  let hadError = false;
+
+  for(const batch of batches){
+    try{
+      const result = await callClaude(systemPrompt, batch);
+      if(result && Array.isArray(result)){
+        result.forEach(r => {
+          const c = ready.find(x => x.id === r.id);
+          if(c){
+            c.puntaje = r.puntaje;
+            c.cumpleMinimos = r.cumpleMinimos;
+            c.resumen = r.resumen;
+            c.fortalezas = r.fortalezas || [];
+            c.alertas = r.alertas || [];
+          }
+        });
+      } else {
+        hadError = true;
+      }
+    }catch(e){
+      hadError = true;
+    }
+    done += batch.length;
+    const pct = Math.round((done / ready.length) * 100);
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = `Analizando ${done} de ${ready.length} candidatos...`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Analizar candidatos →';
+  progressWrap.style.display = 'none';
+
+  if(hadError){
+    errorBox.textContent = 'Algunos lotes no se pudieron evaluar (error de conexión o respuesta inválida). Los candidatos analizados sí se muestran en resultados — podés volver a intentar con los que falten.';
+    errorBox.style.display = 'block';
+  }
+
+  renderResults();
+  goStep(3);
+}
+
+function renderResults(){
+  const cuantos = parseInt(document.getElementById('cuantos').value) || 10;
+  const evaluated = candidates.filter(c => typeof c.puntaje === 'number').sort((a,b) => b.puntaje - a.puntaje);
+  const puesto = document.getElementById('puesto').value.trim() || 'el puesto';
+
+  document.getElementById('resultsSub').textContent = `${evaluated.length} candidatos evaluados para: ${puesto} · top ${Math.min(cuantos, evaluated.length)} marcados como seleccionados`;
+
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+
+  if(evaluated.length === 0){
+    list.innerHTML = '<div class="empty"><div class="big">Todavía no hay resultados</div>Cargá CVs y corré el análisis desde el paso 2.</div>';
+    return;
+  }
+
+  evaluated.forEach((c, idx) => {
+    const isSelected = idx < cuantos;
+    const card = document.createElement('div');
+    card.className = 'card' + (isSelected ? ' selected' : '') + (c.cumpleMinimos === false ? ' no-min' : '');
+    const fortalezas = (c.fortalezas || []).map(f => `<span class="tag-fort">${f}</span>`).join('');
+    const alertas = (c.alertas || []).map(a => `<span class="tag-alert">${a}</span>`).join('');
+    card.innerHTML = `
+      ${isSelected ? '<div class="stamp-tag">Seleccionado</div>' : ''}
+      <div class="score-stamp">${c.puntaje}</div>
+      <div>
+        <h3>${c.nombre}</h3>
+        <div class="resumen">${c.resumen || ''}${c.cumpleMinimos === false ? ' — no cumple algún mínimo.' : ''}</div>
+        <div class="tags">${fortalezas}${alertas}</div>
+      </div>
+      <div class="rank">#${idx + 1}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function exportCSV(){
+  const evaluated = candidates.filter(c => typeof c.puntaje === 'number').sort((a,b) => b.puntaje - a.puntaje);
+  if(evaluated.length === 0){ alert('No hay resultados para exportar todavía.'); return; }
+  const cuantos = parseInt(document.getElementById('cuantos').value) || 10;
+  const rows = [['#','Nombre','Puntaje','Seleccionado','Cumple minimos','Resumen','Fortalezas','Alertas']];
+  evaluated.forEach((c, idx) => {
+    rows.push([
+      idx + 1,
+      c.nombre,
+      c.puntaje,
+      idx < cuantos ? 'Si' : 'No',
+      c.cumpleMinimos === false ? 'No' : 'Si',
+      (c.resumen || '').replace(/"/g,"'"),
+      (c.fortalezas || []).join(' | '),
+      (c.alertas || []).join(' | ')
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'candidatos_' + (document.getElementById('puesto').value.trim() || 'puesto').replace(/\s+/g,'_') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---- Historial guardado (storage persistente) ---- */
+let compareSelection = [];
+
+async function getIndex(){
+  const { data, error } = await supabaseClient
+    .from('busquedas_seleccion')
+    .select('id, puesto, fecha, total_candidatos, top_score, cuantos_seleccionados')
+    .order('fecha', { ascending: false });
+  if(error){ console.error(error); return []; }
+  return (data || []).map(d => ({
+    id: d.id, puesto: d.puesto, fecha: d.fecha,
+    totalCandidatos: d.total_candidatos, topScore: d.top_score, cuantosSeleccionados: d.cuantos_seleccionados
+  }));
+}
+async function getSearch(id){
+  const { data, error } = await supabaseClient
+    .from('busquedas_seleccion')
+    .select('id, puesto, fecha, config, candidatos')
+    .eq('id', id)
+    .single();
+  if(error){ console.error(error); return null; }
+  return data;
+}
+
+async function saveSearch(){
+  const evaluated = candidates.filter(c => typeof c.puntaje === 'number').sort((a,b) => b.puntaje - a.puntaje);
+  if(evaluated.length === 0){ alert('No hay resultados para guardar todavía.'); return; }
+
+  const cuantos = parseInt(document.getElementById('cuantos').value) || 10;
+  const puesto = document.getElementById('puesto').value.trim() || 'Puesto sin nombre';
+  const config = {
+    experiencia: document.getElementById('experiencia').value,
+    educacion: document.getElementById('educacion').value,
+    ubicacion: document.getElementById('ubicacion').value,
+    disponibilidad: document.getElementById('disponibilidad').value,
+    licencia: requiereLicencia,
+    criterios: document.getElementById('criterios').value,
+    cuantos
+  };
+  const candidatosPayload = evaluated.map(c => ({
+    nombre: c.nombre, puntaje: c.puntaje, cumpleMinimos: c.cumpleMinimos,
+    resumen: c.resumen, fortalezas: c.fortalezas || [], alertas: c.alertas || []
+  }));
+
+  const { error } = await supabaseClient.from('busquedas_seleccion').insert([{
+    puesto,
+    config,
+    candidatos: candidatosPayload,
+    total_candidatos: evaluated.length,
+    top_score: evaluated[0].puntaje,
+    cuantos_seleccionados: cuantos
+  }]);
+
+  if(error){
+    console.error(error);
+    alert('No se pudo guardar la búsqueda en Supabase. Revisá la consola para más detalle.');
+    return;
+  }
+
+  alert('Búsqueda guardada. La encontrás en la pestaña Historial.');
+  renderHistory();
+}
+
+async function renderHistory(){
+  const list = document.getElementById('historyList');
+  const idx = await getIndex();
+
+  if(idx.length === 0){
+    list.innerHTML = '<div class="empty"><div class="big">Todavía no hay búsquedas guardadas</div>Guardalas desde la pantalla de resultados, después de analizar candidatos.</div>';
+    document.getElementById('comparePanel').style.display = 'none';
+    return;
+  }
+
+  idx.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  list.innerHTML = idx.map(item => `
+    <div class="history-row">
+      <input type="checkbox" class="hcheck" value="${item.id}" ${compareSelection.includes(item.id) ? 'checked' : ''} onchange="toggleCompareSelect('${item.id}', this.checked)">
+      <div class="hinfo">
+        <div class="hpuesto">${item.puesto}</div>
+        <div class="hmeta mono">${new Date(item.fecha).toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'})} · ${item.totalCandidatos} candidatos evaluados · mejor puntaje ${item.topScore}</div>
+      </div>
+      <button class="btn ghost" onclick="deleteSearch('${item.id}')">Eliminar</button>
+    </div>
+  `).join('');
+}
+
+async function deleteSearch(id){
+  if(!confirm('¿Eliminar esta búsqueda del historial? No se puede deshacer.')) return;
+  const { error } = await supabaseClient.from('busquedas_seleccion').delete().eq('id', id);
+  if(error){ console.error(error); alert('No se pudo eliminar la búsqueda.'); return; }
+  compareSelection = compareSelection.filter(x => x !== id);
+  renderHistory();
+}
+
+function toggleCompareSelect(id, checked){
+  if(checked){
+    if(compareSelection.length >= 2){
+      alert('Solo podés comparar dos búsquedas a la vez. Desmarcá una primero.');
+      renderHistory();
+      return;
+    }
+    compareSelection.push(id);
+  } else {
+    compareSelection = compareSelection.filter(x => x !== id);
+  }
+  if(compareSelection.length === 2){
+    compareSearches(compareSelection[0], compareSelection[1]);
+  } else {
+    document.getElementById('comparePanel').style.display = 'none';
+  }
+}
+
+async function compareSearches(id1, id2){
+  const [a, b] = await Promise.all([getSearch(id1), getSearch(id2)]);
+  const panel = document.getElementById('comparePanel');
+  if(!a || !b){ panel.style.display = 'none'; return; }
+
+  const mapA = {}; a.candidatos.forEach(c => mapA[c.nombre.trim().toLowerCase()] = c);
+  const mapB = {}; b.candidatos.forEach(c => mapB[c.nombre.trim().toLowerCase()] = c);
+  const allNames = Array.from(new Set([...Object.keys(mapA), ...Object.keys(mapB)]));
+
+  const rows = allNames.map(key => {
+    const ca = mapA[key], cb = mapB[key];
+    const nombre = (ca || cb).nombre;
+    const pa = ca ? ca.puntaje : null;
+    const pb = cb ? cb.puntaje : null;
+    const delta = (pa !== null && pb !== null) ? (pb - pa) : null;
+    return { nombre, pa, pb, delta };
+  }).sort((x,y) => (y.pb ?? y.pa ?? -1) - (x.pb ?? x.pa ?? -1));
+
+  const fechaA = new Date(a.fecha).toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+  const fechaB = new Date(b.fecha).toLocaleDateString('es-CR', {day:'numeric', month:'short', year:'numeric'});
+
+  panel.innerHTML = `
+    <fieldset>
+      <legend>Comparación</legend>
+      <div class="hint" style="margin-bottom:12px;">
+        Columna A: <strong>${a.puesto}</strong> — ${fechaA} (${a.candidatos.length} candidatos)<br>
+        Columna B: <strong>${b.puesto}</strong> — ${fechaB} (${b.candidatos.length} candidatos)
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Candidato</th><th>Puntaje A</th><th>Puntaje B</th><th>Cambio</th></tr></thead>
+        <tbody>
+          ${rows.map(r => {
+            let cambio, cls = '';
+            if(r.delta === null){
+              cambio = r.pa === null ? 'nuevo en B' : 'no está en B';
+            } else {
+              cambio = (r.delta > 0 ? '+' : '') + r.delta;
+              cls = r.delta > 0 ? 'up' : (r.delta < 0 ? 'down' : '');
+            }
+            return `<tr>
+              <td>${r.nombre}</td>
+              <td class="mono">${r.pa ?? '—'}</td>
+              <td class="mono">${r.pb ?? '—'}</td>
+              <td class="mono ${cls}">${cambio}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </fieldset>
+  `;
+  panel.style.display = 'block';
+}
+
+renderCVList();
+renderHistory();
+</script>
+</body>
+</html>
